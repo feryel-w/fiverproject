@@ -1,0 +1,77 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Collect Point Form</title>
+    <link rel="stylesheet" href="https://unpkg.com/leaflet@1.7.1/dist/leaflet.css"/>
+    <script src="https://unpkg.com/leaflet@1.7.1/dist/leaflet.js"></script>
+    <style>
+        #map { height: 400px; }
+    </style>
+</head>
+<body>
+
+<h1>Collect Point Form</h1>
+<div id="pointForm">
+    <input type="text" id="pointName" placeholder="Point Name" required>
+    <textarea id="pointDescription" placeholder="Description" required></textarea>
+    <!-- Map section -->
+    <div id="map"></div>
+    <button onclick="saveCollectPoint()">Save Point</button>
+</div>
+
+<script>
+    // Initialize the map
+    var map = L.map('map').setView([51.505, -0.09], 13);  // Default coordinates (London)
+    L.tileLayer('https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png').addTo(map);
+    
+    var currentMarker = null;
+
+    // When the map is clicked, add a marker
+    map.on('click', function(e) {
+        if (currentMarker) {
+            map.removeLayer(currentMarker);  // Remove previous marker
+        }
+        currentMarker = L.marker(e.latlng).addTo(map);
+        currentMarker.bindPopup("<b>Click here to save the point</b>").openPopup();
+    });
+
+    // Save point details to the server
+    function saveCollectPoint() {
+        var name = document.getElementById('pointName').value;
+        var description = document.getElementById('pointDescription').value;
+
+        if (!name || !description) {
+            alert("Veuillez remplir tous les champs.");
+            return;
+        }
+
+        var latlng = currentMarker.getLatLng();  // Get marker position (latitude and longitude)
+
+        // Sending the data to the backend
+        fetch('/admin/collect-points/save', {
+            method: 'POST',
+            headers: {
+                'Content-Type': 'application/json'
+            },
+            body: JSON.stringify({
+                name: name,
+                description: description,
+                latitude: latlng.lat,
+                longitude: latlng.lng
+            })
+        })
+        .then(response => response.json())
+        .then(data => {
+            console.log("Point saved:", data);
+            alert("Point has been saved successfully!");
+            currentMarker.closePopup();
+            currentMarker = null;
+        })
+        .catch(error => console.error('Error:', error));
+    }
+</script>
+
+</body>
+</html>

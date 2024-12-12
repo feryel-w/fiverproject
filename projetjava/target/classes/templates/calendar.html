@@ -1,0 +1,114 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Collection Points with Times</title>
+    <!-- FullCalendar CSS -->
+    <link href="https://cdn.jsdelivr.net/npm/fullcalendar@3.10.2/dist/fullcalendar.min.css" rel="stylesheet">
+    <!-- jQuery -->
+    <script src="https://code.jquery.com/jquery-3.6.0.min.js"></script>
+    <!-- Moment.js (required by FullCalendar v3.x) -->
+    <script src="https://cdn.jsdelivr.net/npm/moment@2.29.1/moment.min.js"></script>
+    <!-- FullCalendar JS -->
+    <script src="https://cdn.jsdelivr.net/npm/fullcalendar@3.10.2/dist/fullcalendar.min.js"></script>
+</head>
+<body>
+
+<!-- Table of Collection Points with time slots -->
+<h2>Collection Points</h2>
+<table border="1" id="collectionPointsTable">
+    <thead>
+        <tr>
+            <th>Name</th>
+            <th>Description</th>
+            <th>Start Time</th>
+            <th>End Time</th>
+            <th>Actions</th>
+        </tr>
+    </thead>
+    <tbody>
+        <!-- Collection points will be inserted here -->
+    </tbody>
+</table>
+
+<!-- Modal for adding/updating event -->
+<div id="eventModal" style="display: none;">
+    <h2>Event Details</h2>
+    <form id="eventForm">
+        <label for="eventTitle">Title:</label>
+        <input type="text" id="eventTitle" name="title"><br><br>
+        <label for="eventStart">Start:</label>
+        <input type="datetime-local" id="eventStart" name="start"><br><br>
+        <label for="eventEnd">End:</label>
+        <input type="datetime-local" id="eventEnd" name="end"><br><br>
+        <button type="submit">Save Event</button>
+    </form>
+</div>
+
+<script>
+// Fetch collection points from your API and populate the table
+function populateCollectionPointsTable() {
+    $.ajax({
+        url: '/api/collectpoints',  // API endpoint to get collection points
+        method: 'GET',
+        success: function(data) {
+            const tableBody = document.querySelector("#collectionPointsTable tbody");
+            tableBody.innerHTML = ''; // Clear any previous data
+
+            // Loop through the fetched data and create table rows
+            data.forEach(point => {
+                const row = document.createElement('tr');
+                row.innerHTML = `
+                    <td>${point.name}</td>
+                    <td>${point.description}</td>
+                    <td><input type="datetime-local" value="${point.startTime}" data-id="${point.id}" class="start-time"></td>
+                    <td><input type="datetime-local" value="${point.endTime}" data-id="${point.id}" class="end-time"></td>
+                    <td><button class="save-time" data-id="${point.id}">Save Time</button></td>
+                `;
+                tableBody.appendChild(row);
+            });
+        },
+        error: function(error) {
+            console.error("Error fetching collection points:", error);
+        }
+    });
+}
+
+// Function to update collection point time in your backend
+function updateCollectionPointTime(id, startTime, endTime) {
+    $.ajax({
+        url: `/api/collectpoints/${id}`,  // API endpoint to update collection point
+        method: 'PUT',
+        data: JSON.stringify({
+            startTime: startTime,
+            endTime: endTime
+        }),
+        contentType: 'application/json',
+        success: function(response) {
+            alert('Time updated successfully!');
+        },
+        error: function(xhr, status, error) {
+            console.error("Error updating collection point time:", xhr.responseText, status, error);
+        }
+    });
+}
+
+// Event listener for saving the time for a collection point
+$(document).on('click', '.save-time', function() {
+    const id = $(this).data('id');
+    const startTime = $(`input[data-id="${id}"].start-time`).val();
+    const endTime = $(`input[data-id="${id}"].end-time`).val();
+
+    // Update the time in the backend
+    updateCollectionPointTime(id, startTime, endTime);
+});
+
+// Initially populate the table when the page loads
+$(document).ready(function() {
+    populateCollectionPointsTable();
+});
+</script>
+
+</body>
+</html>
